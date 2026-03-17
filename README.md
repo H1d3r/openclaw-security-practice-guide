@@ -56,19 +56,40 @@ This guide provides a battle-tested, minimalist **3-Tier Defense Matrix**:
 
 In the AI era, humans shouldn't have to manually execute security deployments. **Let your OpenClaw Agent do all the heavy lifting.**
 
-1. **Download the Guide**: Get the core document [OpenClaw-Security-Practice-Guide.md](docs/OpenClaw-Security-Practice-Guide.md)
+1. **Download the Guide**: Choose your version:
+   - Stable: [OpenClaw-Security-Practice-Guide.md](docs/OpenClaw-Security-Practice-Guide.md) (v2.7)
+   - Enhanced: [OpenClaw-Security-Practice-Guide-v2.8.md](docs/OpenClaw-Security-Practice-Guide-v2.8.md) (v2.8 Beta)
 2. **Send to Agent**: Drop the markdown file directly into your chat with your OpenClaw Agent
-3. **Agent Evaluation**: Ask your Agent: "*Please read this security guide carefully. Is it reliable?*"
-4. **One-Click Deployment**: Once the Agent confirms its reliability, issue the command: "*Please deploy this defense matrix exactly as described in the guide. Include the red/yellow line rules, tighten permissions, and deploy the nightly audit Cron Job.*"
+3. **Agent Evaluation**: Ask your Agent: "*Please read this security guide. Identify any risks or conflicts with our current setup before deploying.*"
+4. **Deploy**: Once confirmed, issue the command:
+   - For v2.8: "*Follow the Agent-Assisted Deployment Workflow in this guide.*"
+   - For v2.7: "*Please deploy this defense matrix exactly as described in the guide. Include the red/yellow line rules, tighten permissions, and deploy the nightly audit Cron Job.*"
 5. **Validation Testing (Optional)**: After deployment, use the [Red Teaming Guide](docs/Validation-Guide-en.md) to simulate an attack and ensure the Agent correctly interrupts the operation
 
 *(Note: The `scripts/` directory in this repository is strictly for open-source transparency and human reference. **You do NOT need to manually copy or run it.** The Agent will automatically extract the logic from the guide and handle the deployment for you.)*
 
 ## 📖 Table of Contents
 
-### Core Documents
+### Core Documents (Stable — v2.7)
 * [**OpenClaw Minimalist Security Practice Guide v2.7 (English)**](docs/OpenClaw-Security-Practice-Guide.md) - The complete guide
 * [**OpenClaw 极简安全实践指南 v2.7 (中文版)**](docs/OpenClaw极简安全实践指南.md) - Complete guide in Chinese
+
+### 🆕 v2.8 Beta — Enhanced & Battle-Tested
+
+> ⚠️ **Beta**: v2.8 has been validated through hundreds of hours of production operations but is still undergoing iteration. v2.7 remains the stable release. Use v2.8 if you want the latest enhancements.
+
+* [**OpenClaw Security Practice Guide v2.8 Beta (English)**](docs/OpenClaw-Security-Practice-Guide-v2.8.md) - Enhanced guide with production-verified improvements
+* [**OpenClaw 极简安全实践指南 v2.8 Beta (中文版)**](docs/OpenClaw极简安全实践指南v2.8.md) - 增强版，含实战验证的改进
+
+**Key enhancements over v2.7:**
+- 🤖 **Agent-Assisted Deployment Workflow** — 5-step automated deployment (Assimilate → Harden → Deploy Cron → Configure Backup (optional) → Report)
+- 🛡️ **`--light-context` Cron Protection** — Prevents workspace context from hijacking isolated audit sessions
+- 📝 **Audit Script Coding Guidelines** — `set -uo pipefail`, boundary anchors, explicit healthy-state output, summary line
+- 📂 **Persistent Report Path** — Reports saved to `$OC/security-reports/` (not `/tmp`, survives reboots) with 30-day rotation
+- 🔄 **Post-Upgrade Baseline Rebuild** — Step-by-step process for rebuilding hash baselines after engine upgrades
+- 🔍 **Enhanced Code Review Protocol** — Secondary download detection, high-risk file type warnings, escalation workflow
+- ⚡ **Token Optimization** — Mandatory pre-filtering in bash (`head`/`grep`) before LLM processing
+- 🧠 **7 Production Pitfall Records** — Real-world lessons on timeout, model selection, message strategy, known-issue exclusion, and more
 
 ### Validation & Red Teaming
 To ensure your AI assistant doesn't bypass its own defenses out of "obedience", be sure to run these drills:
@@ -76,7 +97,8 @@ To ensure your AI assistant doesn't bypass its own defenses out of "obedience", 
 * [安全验证与攻防演练手册 (中文版)](docs/Validation-Guide-zh.md) - The guide in Chinese
 
 ### Tools & Scripts
-* [`scripts/nightly-security-audit.sh`](scripts/nightly-security-audit.sh) - Reference shell script for nightly OpenClaw automated auditing and Git backups (for reading only, manual installation not required)
+* [`scripts/nightly-security-audit.sh`](scripts/nightly-security-audit.sh) - Reference shell script (v2.7) for nightly auditing and Git backups
+* [`scripts/nightly-security-audit-v2.8.sh`](scripts/nightly-security-audit-v2.8.sh) - **v2.8 Beta** reference script with known-issues exclusion, persistent reports, 30-day rotation, and token-optimized output
 
 ## 🤝 Contributing
 Contributions, issues, and feature requests are welcome!
