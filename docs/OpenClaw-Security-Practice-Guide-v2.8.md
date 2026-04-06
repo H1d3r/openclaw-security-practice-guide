@@ -29,17 +29,22 @@ Post-action ── Nightly Automated Audit (Explicit Push Notification) + OpenCl
 2. **Step 2: Harden**
    - Immediately execute `chmod 600 $OC/openclaw.json` and `chmod 600 $OC/devices/paired.json`.
    - Immediately execute `sha256sum $OC/openclaw.json > $OC/.config-baseline.sha256` to generate the baseline file.
-3. **Step 3: Deploy Audit Cron**
+3. **Step 2.5: CLI Permission Pre-check (Pre-check Operator Scope)**
+   - Execute `openclaw devices list`, and confirm that the paired device's Scopes include `operator.write`.
+   - If Scopes only have `operator.read`: Check if there is a Pending request -> execute `openclaw devices approve <Request-ID>` to approve it.
+   - If there is neither `write` permission nor a Pending request: Execute `openclaw pair local` to generate a pairing request, then approve it.
+   - **Compliance constraint**: If this pre-check is not passed, `openclaw cron add` will report a `pairing required` error. Do not skip this step.
+4. **Step 3: Deploy Audit Cron**
    - Study the core audit metrics below, write a complete bash script with pre-filtering logic (e.g., `head`/`grep`), and save it to `$OC/workspace/scripts/nightly-security-audit.sh`, then grant `chmod +x` execution permission.
    - Default timezone is `Asia/Singapore` with cron expression `0 3 * * *` (03:00 AM). Users may adjust timezone and schedule as needed.
    - **Compliance constraint**: Do not ask the human for their `chatId`. The Agent should automatically extract the current channel's valid push ID from its own context or API interface and populate the `--to` parameter.
    - Execute `openclaw cron add` with the appropriate parameters to register the job.
    - After registration, immediately execute `sudo chattr +i $OC/workspace/scripts/nightly-security-audit.sh` to lock the script as read-only.
-4. **Step 4: Configure Backup (Optional)**
+5. **Step 4: Configure Backup (Optional)**
    - This step is optional. If remote synchronization is not needed, skip this step or retain local backups only.
    - Check whether a Git repository is initialized under `$OC/` and connected to a remote.
    - If no disaster recovery repository is detected, proactively prompt the human to provide a private Git repository URL or other backup solution (and verify the necessary credentials). Then execute `git init` on their behalf, configure `.gitignore` (referencing the backup content section below), and complete the first push to the remote.
-5. **Step 5: Report**
+6. **Step 5: Report**
    - After everything is in place, manually trigger the Cron job by its ID for an immediate run.
    - Based on the execution results, reply to the human with a concise deployment completion briefing in their preferred language.
 
@@ -196,6 +201,7 @@ openclaw cron add \
 
 > **⚠️ Pitfall Records (Verified in Production):**
 >
+> 0. **`openclaw cron add` reports `pairing required` or `gateway token mismatch`**: Write operations like `cron add` require the CLI to have `operator.write` permission. By default, newly paired devices only have `operator.read` (read-only), causing all write operations to be rejected by the Gateway. Troubleshooting flow: run `openclaw devices list` -> check Scopes -> if `write` permission is missing, find the Pending request and execute `openclaw devices approve <Request-ID>`; if there is no Pending request, first execute `openclaw pair local` to generate one, then approve it. Note: passing `gateway.auth.token` directly to `--token` will report `pairing required`; passing the operator token to `--token` will report `gateway token mismatch` — both are symptoms of insufficient permissions, and the root cause is that the operator scope lacks `write`.
 > 1. **`--timeout-seconds` MUST be ≥ 300**: An isolated session requires cold-starting the Agent (loading system prompt + workspace context), 120s will result in a timeout kill
 > 2. **`--light-context` is mandatory**: By default, isolated sessions load the full workspace context (including the entirety of AGENTS.md), where generic instructions (e.g., "log all operations to memory") will **hijack task execution** — the LLM finishes running the script but then goes off to read/write memory files instead of returning results. The final push becomes internal monologue rather than the audit report. `--light-context` compresses input tokens from ~55K to ~17K while eliminating behavioral deviation risk
 > 3. **Model selection**: For script-execution cron jobs, use a mid-tier model that balances cost and instruction adherence. Overly powerful reasoning models (e.g., Opus-tier) in isolated sessions tend to autonomously expand the task scope, deviating from the original instructions

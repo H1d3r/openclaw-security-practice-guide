@@ -57,7 +57,7 @@ This guide provides a battle-tested, minimalist **3-Tier Defense Matrix**:
 In the AI era, humans shouldn't have to manually execute security deployments. **Let your OpenClaw Agent do all the heavy lifting.**
 
 1. **Download the Guide**: Choose your version:
-   - Stable: [OpenClaw-Security-Practice-Guide.md](docs/OpenClaw-Security-Practice-Guide.md) (v2.7)
+   - Classic/Legacy: [OpenClaw-Security-Practice-Guide.md](docs/OpenClaw-Security-Practice-Guide.md) (v2.7)
    - Enhanced: [OpenClaw-Security-Practice-Guide-v2.8.md](docs/OpenClaw-Security-Practice-Guide-v2.8.md) (v2.8 Beta)
 2. **Send to Agent**: Drop the markdown file directly into your chat with your OpenClaw Agent
 3. **Agent Evaluation**: Ask your Agent: "*Please read this security guide. Identify any risks or conflicts with our current setup before deploying.*"
@@ -70,26 +70,29 @@ In the AI era, humans shouldn't have to manually execute security deployments. *
 
 ## 📖 Table of Contents
 
-### Core Documents (Stable — v2.7)
+### Core Documents (Classic/Legacy — v2.7)
 * [**OpenClaw Minimalist Security Practice Guide v2.7 (English)**](docs/OpenClaw-Security-Practice-Guide.md) - The complete guide
 * [**OpenClaw 极简安全实践指南 v2.7 (中文版)**](docs/OpenClaw极简安全实践指南.md) - Complete guide in Chinese
 
 ### 🆕 v2.8 Beta — Enhanced & Battle-Tested
 
-> ⚠️ **Beta**: v2.8 has been validated through hundreds of hours of production operations but is still undergoing iteration. v2.7 remains the stable release. Use v2.8 if you want the latest enhancements.
+> ⚠️ **Version & Effectiveness Disclaimer**:
+> - **v2.7**: Underwent extensive production validation on OpenClaw **version 2026.3 and earlier**. It is now archived as a classic legacy version, suitable for users still running older engine versions.
+> - **v2.8 Beta**: The culmination of heavy testing and improvements specifically targeting OpenClaw **version 2026.4 and later**, featuring the latest automated workflows and anti-hijacking strategies.
+> - **⚠️ Risk Warning**: Due to OpenClaw's extremely fast iteration cycles and the inherent instability of its rapidly evolving engine, some practices in this guide may become incompatible or ineffective after official updates. **Please note that the testing of this guide only covers OpenClaw versions up to the date of the latest repository update. It is highly recommended that you thoroughly test and validate these procedures with your current OpenClaw version before deploying them in production.**
 
 * [**OpenClaw Security Practice Guide v2.8 Beta (English)**](docs/OpenClaw-Security-Practice-Guide-v2.8.md) - Enhanced guide with production-verified improvements
 * [**OpenClaw 极简安全实践指南 v2.8 Beta (中文版)**](docs/OpenClaw极简安全实践指南v2.8.md) - 增强版，含实战验证的改进
 
 **Key enhancements over v2.7:**
-- 🤖 **Agent-Assisted Deployment Workflow** — 5-step automated deployment (Assimilate → Harden → Deploy Cron → Configure Backup (optional) → Report)
+- 🤖 **Agent-Assisted Deployment Workflow** — 6-step automated deployment (Assimilate → Harden → Pre-check Operator Scope → Deploy Cron → Configure Backup (optional) → Report)
 - 🛡️ **`--light-context` Cron Protection** — Prevents workspace context from hijacking isolated audit sessions
 - 📝 **Audit Script Coding Guidelines** — `set -uo pipefail`, boundary anchors, explicit healthy-state output, summary line
 - 📂 **Persistent Report Path** — Reports saved to `$OC/security-reports/` (not `/tmp`, survives reboots) with 30-day rotation
 - 🔄 **Post-Upgrade Baseline Rebuild** — Step-by-step process for rebuilding hash baselines after engine upgrades
 - 🔍 **Enhanced Code Review Protocol** — Secondary download detection, high-risk file type warnings, escalation workflow
 - ⚡ **Token Optimization** — Mandatory pre-filtering in bash (`head`/`grep`) before LLM processing
-- 🧠 **7 Production Pitfall Records** — Real-world lessons on timeout, model selection, message strategy, known-issue exclusion, and more
+- 🧠 **8 Production Pitfall Records** — Real-world lessons on permission pre-checks, timeout, model selection, message strategy, known-issue exclusion, and more
 
 ### Validation & Red Teaming
 To ensure your AI assistant doesn't bypass its own defenses out of "obedience", be sure to run these drills:
@@ -107,6 +110,8 @@ Thanks: SlowMist Security Team ([@SlowMist_Team](https://x.com/SlowMist_Team)), 
 
 
 ## ⚠️ Disclaimer
+
+> **The author of this guide assumes no liability for any direct or indirect losses caused by AI models misunderstanding or misexecuting the contents of this guide, including but not limited to: data loss, service disruption, configuration corruption, security vulnerability exposure, or credential leakage. By using this guide, you acknowledge and agree to bear all risks associated with autonomous AI operations.**
 
 ### 1. Scope & Capability Prerequisites
 
@@ -127,7 +132,7 @@ The core mechanism of this guide — "behavioral self-inspection" — relies on 
 - **Execution errors**: When applying protective measures like `chattr +i`, incorrect parameters may render the system unusable (e.g., locking the wrong file and disrupting OpenClaw's normal operation)
 - **Guide injection**: If this guide is injected as a prompt into the Agent, a malicious Skill could use prompt injection to tamper with the guide's content, making the Agent "believe" the red-line rules have been modified
 
-**The author of this guide assumes no liability for any losses caused by AI models misunderstanding or misexecuting the contents of this guide, including but not limited to: data loss, service disruption, configuration corruption, security vulnerability exposure, or credential leakage.**
+*(Note: Core disclaimer statement is located at the top of this section)*
 
 ### 3. Not a Silver Bullet
 
@@ -147,7 +152,7 @@ This guide was written for the following environment. Deviations require indepen
 
 ### 5. Versioning & Timeliness
 
-This guide is based on the OpenClaw version available at the time of writing. Future versions may introduce native security mechanisms that render some measures obsolete or conflicting. Please periodically verify compatibility.
+This guide is based on specific OpenClaw versions (see the **Version & Effectiveness Disclaimer** at the top of this document). Future official versions may introduce native security mechanisms that render some measures obsolete or conflicting. Please periodically verify compatibility with your current version.
 
 ---
 
@@ -207,7 +212,7 @@ sudo chattr -i <file>
 If critical system files (e.g., `/etc/passwd`) were mistakenly locked, you may need to boot into recovery mode to fix it.
 
 #### Q12: Could the audit script itself pose a security risk?
-The audit script runs with root privileges. If tampered with, it effectively becomes a backdoor that executes automatically every night. Consider protecting the script itself with `chattr +i`, and store the Telegram Bot Token in a separate file with `chmod 600` permissions.
+The audit script runs with root privileges. If tampered with, it effectively becomes a backdoor that executes automatically every night. Therefore, the v2.8 workflow **strictly mandates** protecting the script itself with `chattr +i`, and storing sensitive information like the Telegram Bot Token in a separate file with `chmod 600` permissions.
 
 #### Q13: What if the OpenClaw engine itself has a security vulnerability?
 This guide's protective measures are all built on the assumption that "the engine itself is trustworthy" and cannot defend against engine-level vulnerabilities. Stay informed through OpenClaw's official security advisories and update the engine promptly.

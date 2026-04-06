@@ -29,17 +29,22 @@
 2. **Step 2: 权限收窄落地 (Harden)**
    - 立即执行 `chmod 600 $OC/openclaw.json` 和 `chmod 600 $OC/devices/paired.json`。
    - 立即执行 `sha256sum $OC/openclaw.json > $OC/.config-baseline.sha256` 生成基线文件。
-3. **Step 3: 部署夜间巡检 (Deploy Audit Cron)**
+3. **Step 2.5: CLI 权限预检 (Pre-check Operator Scope)**
+   - 执行 `openclaw devices list`，确认已配对设备的 Scopes 包含 `operator.write`。
+   - 若 Scopes 仅有 `operator.read`：查看是否有 Pending 请求 → 执行 `openclaw devices approve <Request-ID>` 批准。
+   - 若既无 write 权限也无 Pending 请求：执行 `openclaw pair local` 生成配对请求，再 approve。
+   - **合规约束**：未通过此预检，`openclaw cron add` 将报 `pairing required` 错误，切勿跳过。
+4. **Step 3: 部署夜间巡检 (Deploy Audit Cron)**
    - 研读下文的巡检覆盖核心指标，编写包含预筛选逻辑（如 `head`/`grep`）的完整 bash 脚本，并写入 `$OC/workspace/scripts/nightly-security-audit.sh`，完毕后赋予 `chmod +x` 执行权限。
    - 默认使用 cron 表达式 `0 3 * * *`（凌晨 3:00），时区需显式设置（如 `Asia/Shanghai`、`America/New_York`）。用户可自行调整。
    - **合规约束**：无需询问人类索要 `chatId`。Agent 应利用自身的上下文特征或 API 接口自动提取当前频道的有效推送 ID 填入 `--to` 参数中。
    - 执行 `openclaw cron add` 完成相关参数配置并注册任务。
    - 注册完毕后，立即执行 `sudo chattr +i $OC/workspace/scripts/nightly-security-audit.sh` 将脚本自身只读锁定。
-4. **Step 4: 配置大脑灾备 (Configure Backup)（可选）**
+5. **Step 4: 配置大脑灾备 (Configure Backup)（可选）**
    - 此步骤为可选。如果不需要远端同步，可跳过或仅保留本地备份。
    - 检查 `$OC/` 目录下是否已初始化 Git 仓库并连接远端。
    - 若未检测到灾备仓库，主动提示人类提供一个私有 Git 仓库地址或其它备份方案（并核对必要的认证凭证）。随后，代为执行 `git init`，配置好 `.gitignore`（参考后文中排期的项目目录）并完成首次推送到远端，打通增量同步的任督二脉。
-5. **Step 5: 交付验收 (Report)**
+6. **Step 5: 交付验收 (Report)**
    - 全部落实后，手动调用该 Cron 的 ID 触发一次即时运行。
    - 根据执行结果，用人类的首选语言回复一份简洁的部署完成简报。
 
@@ -196,6 +201,7 @@ openclaw cron add \
 
 > **⚠️ 踩坑记录（实战验证）：**
 >
+> 0. **`openclaw cron add` 报错 `pairing required` 或 `gateway token mismatch`**：`cron add` 等写操作要求 CLI 具备 `operator.write` 权限。默认情况下，新配配对的设备仅有 `operator.read`（只读），导致所有写操作被 Gateway 拒绝。排查流：执行 `openclaw devices list` -> 检查 Scopes -> 若无 `write` 权限，寻找 Pending 请求并执行 `openclaw devices approve <Request-ID>`；若无 Pending 请求，先执行 `openclaw pair local` 生成，再 approve。注意：直接将 `gateway.auth.token` 传给 `--token` 会报 `pairing required`，将 operator token 传给 `--token` 会报 `gateway token mismatch`，二者皆为权限不足的表象，根源均为 operator scope 缺少 `write`。
 > 1. **`--timeout-seconds` 必须 ≥ 300**：isolated session 需要冷启动 Agent（加载 system prompt + workspace context），120s 会超时被杀
 > 2. **必须启用 `--light-context`**：isolated session 默认加载完整 workspace context（含 AGENTS.md 全文），其中的通用指令（如将操作记录到 memory）会**劫持任务执行**——LLM 执行完脚本后不返回结果，而是去读写 memory 文件，最终推送的是内部独白而非审计报告。`--light-context` 将 input tokens 从 ~55K 压缩到 ~17K，同时消除行为偏离风险
 > 3. **模型选择**：脚本执行类 cron 建议选用中等能力的模型，兼顾成本和指令遵循。过于强大的推理模型（如 Opus 级别）在 isolated session 中容易自行扩展任务范围，偏离原始指令
